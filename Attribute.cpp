@@ -67,6 +67,7 @@ namespace SF {
       case TokenType::number:
         return isNumericKeyword(type);
       case TokenType::identifier:
+      case TokenType::string:
         return Keywords::varchar_kw==type;
       default: return false;
     }

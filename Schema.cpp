@@ -120,11 +120,11 @@ namespace SF {
     return StatusResult{true};
   }
 
-    //Init datablock from a key/value list; set record#  (was called updateDataBlock()...)
+  //Init datablock from a key/value list; set id; FORMERLY: updateDataBlock()...
   StatusResult Schema::encodeBlock(Block &aBlock, KeyValueList &aList) {
     aBlock.header.type='D';
     aBlock.header.dirty=true;
-    aBlock.header.count=hash;    //store has in header for manual block search against table...
+    aBlock.header.count=hash;    //store here for manual table search...
     aBlock.header.id=++autoincr; //record number
     
     //--------------------------------------------------------

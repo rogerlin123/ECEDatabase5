@@ -58,7 +58,7 @@ namespace SF {
 
   StatusResult UserValue::becomeVarchar() {
     datatype=Keywords::varchar_kw;
-    type=TokenType::number;
+    type=TokenType::string;
     return StatusResult{true};
   }
 

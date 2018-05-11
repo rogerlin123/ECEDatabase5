@@ -61,7 +61,7 @@ namespace SF {
     StatusResult  hasCompatibleAttribute(const std::string &aName, UserValue &aValue) const;    
     StatusResult  validate(KeyValueList &aList);
     
-    StatusResult  encodeBlock(Block &aBlock, KeyValueList &aList); //was updateDataBlock(...)
+    StatusResult  encodeBlock(Block &aBlock, KeyValueList &aList); 
     StatusResult  decodeBlock(Block &aBlock, KeyValueList &aList);
     
     friend class Database;
