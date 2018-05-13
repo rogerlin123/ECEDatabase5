@@ -8,6 +8,7 @@
 
 #include "Filters.hpp"
 #include "Parser.hpp"
+#include "Row.hpp"
 #include <map>
 #include <string>
 
@@ -106,5 +107,13 @@ namespace SF {
 
     return StatusResult{false, gIdentifierExpected};
   }
+  
+  bool Filters::matches(Row &aRow) {
+    bool theResult=true;
+    if(expressions.size()) {      
+    }
+    return theResult;
+  }
+  
 
 }

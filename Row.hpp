@@ -30,7 +30,8 @@ namespace SF {
     ~Row();
     
     KeyValueList& getColumns() {return columns;}
-    
+    int32_t       getBlockNumber() {return blockNumber;}
+
     friend class RowCollection;
   };
   

@@ -135,12 +135,18 @@ namespace SF {
     return StatusResult{true};
   }
   
-  StatusResult Database::deleteRows(Schema &aSchema, Filters &aFilters) {
-    //------------------------------------
-    // Your code here...
-    //------------------------------------
+  //oh look! - deleteRows uses existing features, so you get it for free...
+  StatusResult Database::deleteRows(RowCollection &aCollection, Schema &aSchema, Filters &aFilters) {
+    StatusResult theResult=selectRows(aCollection, aSchema, aFilters);
+    if(theResult) {
+      RowList &theRows=aCollection.getRows();
+      for(auto theRow : theRows) {
+        theResult=storage.releaseBlock(theRow->getBlockNumber()); //free up the block...
+      }
+    }
     return StatusResult{true};
   }
+  
   
   StatusResult Database::dropTable(std::string aTableName) {
     //------------------------------------

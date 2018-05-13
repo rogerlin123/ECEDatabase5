@@ -48,7 +48,7 @@ namespace SF {
     StatusResult  showTables();
     
     StatusResult  selectRows(RowCollection &aCollection, Schema &aSchema, Filters &aFilters);
-    StatusResult  deleteRows(Schema &aSchema, Filters &aFilters);
+    StatusResult  deleteRows(RowCollection &aCollection, Schema &aSchema, Filters &aFilters);
     StatusResult  insertRow(Schema &aSchema, KeyValueList &aList);
     StatusResult  updateRow(Schema &aSchema, Filters &aFilters, KeyValueList &aList);
 

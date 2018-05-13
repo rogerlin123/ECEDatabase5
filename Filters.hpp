@@ -17,6 +17,7 @@
 namespace SF {
   
   class Parser;
+  class Row;
   
   struct Expression {
     Property    key;
@@ -43,6 +44,7 @@ namespace SF {
     
     //KeyValueList& getFilters() {return filters;}
     StatusResult  parse(Parser &aParser);
+    bool          matches(Row &aRow);
   };
 
 }
