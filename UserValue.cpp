@@ -35,16 +35,22 @@ namespace SF {
   StatusResult UserValue::becomeInteger() {
     datatype=Keywords::integer_kw;
     type=TokenType::number;
-    std::string::size_type theSize;
-    anInteger = std::stoi (value, &theSize);
+    anInteger=0;
+    if(value.find_first_not_of("-0123456789") == std::string::npos) {
+      std::string::size_type theSize;
+      anInteger = std::stoi (value, &theSize);
+    }
     return StatusResult{true};
   }
-
+  
   StatusResult UserValue::becomeFloat() {
     datatype=Keywords::float_kw;
     type=TokenType::number;
-    std::string::size_type theSize;
-    aFloat = std::stof(value, &theSize);
+    aFloat=0;
+    if(value.find_first_not_of("-.0123456789") == std::string::npos) {
+      std::string::size_type theSize;
+      aFloat = std::stof (value, &theSize);
+    }
     return StatusResult{true};
   }
 
