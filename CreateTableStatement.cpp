@@ -49,16 +49,15 @@ namespace SF {
   }
   
   StatusResult CreateTableStatement::parseAttributes(Parser &aParser) {
-    
     Token theToken{};
-    if(aParser.peekToken(theToken)) {
+    if(aParser.nextToken(theToken)) {
       while(theToken.type==TokenType::identifier) {
         Attribute theAttribute(theToken.data);
-        aParser.skip(1); //skip identifier...
+        //aParser.skip(1); //skip identifier...
         if(aParser.nextToken(theToken)) {
           if(isDatatype(theToken.keyword)) {
             theAttribute.setType(theToken.keyword);
-
+            
             bool options=true;
             while(options && aParser.nextToken(theToken)) {
               switch(theToken.type) {
@@ -72,7 +71,7 @@ namespace SF {
                       break;
                     case Keywords::null_kw:
                       theAttribute.setNullable(false);
-                      break;                      
+                      break;
                     default: break;
                   }
                   break;
@@ -86,11 +85,7 @@ namespace SF {
                   break;
                   
                 case TokenType::comma:
-                  aParser.peekToken(theToken);
-                  if(TokenType::semicolon==theToken.type) {
-                    aParser.skip(1);
-                  }
-                  //fall thru...
+                  aParser.nextToken(theToken);
                   
                 case TokenType::rparen: //fall thru...
                   
@@ -108,7 +103,6 @@ namespace SF {
       }
     }
     aParser.skipIf(TokenType::semicolon);
-    
     return StatusResult{true};
   }
   

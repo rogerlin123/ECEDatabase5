@@ -1,363 +1,214 @@
 //
-//  AVLTree.hpp
-//  ECEDatabase5
+//  AVLTree2.h
+//  ECEDatabase6
 //
-//  Added by rick gessner on 4/27/18.
-//  From version by Domenico Porcino
+//  based on implementation by Taro Minowa
 //
 
-#ifndef AVLTree_h
-#define AVLTree_h
+#ifndef AVLTree2_h
+#define AVLTree2_h
 
-const int kMaxDepth =32;
+#include <queue>
+#include <string>
 
-template<class KeyType, class ItemType>
-class AVLTree {
-protected:
+//My Node class for storing data, note how I add height
 
-  struct Node {
-    Node(KeyType aKey, ItemType aValue) :
-      balance(0), depth(0), key(aKey), value(aValue), left(0), right(0) {}
+namespace SF {
+  
+  template <class KeyType, class ValueType>
+  class AVLTree {
     
-    KeyType  key;
-    ItemType value;
-    short    balance;
-    short    depth;
-
-    Node* left;
-    Node* right;
-  };
-  
-  Node *root;
-  
-public:
-  
-  AVLTree() : root(0) { }
-  ~AVLTree() { }
-  
-  void insert(KeyType key, ItemType item) {
-    if (root == 0) {
-      root = new Node(key, item);
-    }
-    else _Insert(key, item, root);
-  }
-  
-  void remove(KeyType key) {
-    bool delOK = false;
-    _Remove(root, key, delOK);
-  }
-  
-  bool find(KeyType aKey, ItemType& aValue) {
-    return _Find(aKey, aValue, root);
-  }
-  
-  short getDepth() const {  return (root ? root->depth : 0);  }
-  
-  //---------------------------------------------
-  
-  class AVLIterator {
   public:
     
-    AVLIterator(AVLIterator* aCopy) :
-      tree(aCopy->tree), current(aCopy->current) {
-      stackIndex = aCopy->stackIndex;
+    struct NodeType {
+      KeyType   key;
+      ValueType value;
+      int height;
+      NodeType *left;
+      NodeType *right;
       
-      for (int i = 0; i < stackIndex; ++i)
-        stack[i] = aCopy->stack[i];
-    }
-    
-    AVLIterator(AVLTree *aTree) : tree(aTree) {
-      KeyType key;
-      ItemType item;
-      getFirst(key, item);
-    }
-    
-    ~AVLIterator() { }
-    
-    bool getCurrent(KeyType& aKey, ItemType& aValue) {
-      if (current) {
-        aKey = current->key;
-        aValue = current->value;
-        return true;
+      NodeType(const KeyType &aKey, const ValueType &aValue) {
+        key = aKey;
+        value = aValue;
+        left = nullptr;
+        right = nullptr;
+        height = 0;
       }
-      return false;
+      
+      void updateHeight(){
+        int lHeight = 0;
+        int rHeight = 0;
+        if (left != nullptr) {
+          lHeight = left->height;
+        }
+        if (right != nullptr) {
+          rHeight = right->height;
+        }
+        int max = (lHeight > rHeight) ? lHeight : rHeight;
+        height = max + 1;
+      }
+    };
+    
+    //-----------------------------------------------
+    // Notify callback for every node (breadth-first)
+    //-----------------------------------------------
+    
+    struct NodeObserver {
+      virtual void operator()(NodeType &aNode)=0;
+    };
+    
+    class BreadthFirstVisitor {
+    protected:
+      std::queue<NodeType*> queue;
+      
+    public:
+      
+      BreadthFirstVisitor(const BreadthFirstVisitor &aCopy) : queue() {}
+      
+      BreadthFirstVisitor(NodeType *aNode=nullptr) {
+        if(aNode) queue.push(aNode);
+      }
+      
+      void each(NodeObserver &anObserver) {
+        while (queue.size()) {
+          auto theNode = queue.front();
+          
+          anObserver(*theNode);
+          
+          if (nullptr!=theNode->left) {
+            queue.push(theNode->left);
+          }
+          if (nullptr!=theNode->right) {
+            queue.push(theNode->right);
+          }
+          queue.pop(); //yank the current first node...
+        }
+      }
+    };
+    
+    //-------------------------------
+    
+    AVLTree(){
+      root = nullptr;
     }
     
-    // returns false if the tree is empty
-    bool getFirst(KeyType& aKey, ItemType& aValue) {
-      stackIndex = 0;
+    ~AVLTree(){
+      destroy(root);
+    }
+    
+    NodeType* getRoot() {return root;}
+    
+    BreadthFirstVisitor getBreadthFirstVisitor() {
+      return BreadthFirstVisitor(root);
+    }
+    
+    void insert(const KeyType &aKey, const ValueType &aValue){
+      insertAt(aKey, aValue, root);
+    }
+    
+    //Rotate a Node branch to the left, in order to balance things
+    NodeType* rotateLeft(NodeType *&leaf){
+      NodeType* temp = leaf->right;
+      leaf->right = temp->left;
+      temp->left = leaf;
       
-      if (!tree->root) {
-        current = 0;
-        aValue = 0;
-        return false;
+      //update the Nodes new height
+      leaf->updateHeight();
+      
+      return temp;
+    }
+    
+    //Rotate a Node branch to the right, in order to balance things
+    NodeType* rotateRight(NodeType *&leaf){
+      NodeType* temp = leaf->left;
+      leaf->left = temp->right;
+      temp->right = leaf;
+      
+      //update the Nodes new height
+      leaf->updateHeight();
+      
+      return temp;
+    }
+    
+    //Rotate a Node branch to the right then the left, in order to balance things
+    NodeType* rotateRightLeft(NodeType *&leaf){
+      NodeType* temp = leaf->right;
+      leaf->right = rotateRight(temp);
+      return rotateLeft(leaf);
+    }
+    
+    //Rotate a Node branch to the left then the right, in order to balance things
+    NodeType* rotateLeftRight(NodeType *&leaf){
+      NodeType* temp = leaf->left;
+      leaf->left = rotateLeft(temp);
+      return rotateRight(leaf);
+    }
+    
+    //Function that checks each Node's left and right branches to determine if they are unbalanced
+    //If they are, we rotate the branches
+    void rebalance(NodeType *&leaf){
+      int hDiff = getDiff(leaf);
+      if (hDiff > 1){
+        if (getDiff(leaf->left) > 0) {
+          leaf = rotateRight(leaf);
+        } else {
+          leaf = rotateLeftRight(leaf);
+        }
+      } else if(hDiff < -1) {
+        if (getDiff(leaf->right) < 0) {
+          leaf = rotateLeft(leaf);
+        } else {
+          leaf = rotateRightLeft(leaf);
+        }
+      }
+    }
+    
+  private:
+    NodeType *root;
+    
+    void insertAt(const KeyType &aKey, const ValueType &aValue, NodeType *&leaf){
+      if (leaf == nullptr){
+        leaf = new NodeType(aKey, aValue);
+        leaf->updateHeight();
       }
       else {
-        Node theCurr = tree->root;
-        Node thePrev = theCurr;
-        while (theCurr) {
-          thePrev = theCurr;
-          if (theCurr->left)
-            stack[stackIndex++] = theCurr;
-          theCurr = theCurr->left;
+        if (aKey < leaf->key){
+          insertAt(aKey, aValue, leaf->left);
+          leaf->updateHeight();
+          rebalance(leaf);
         }
-        
-        current = thePrev;
-        aKey = current->key;
-        aValue = current->value;
-        return true;
+        else{
+          insertAt(aKey, aValue, leaf->right);
+          leaf->updateHeight();
+          rebalance(leaf);
+        }
       }
     }
     
-    bool getNext(KeyType& aKey, ItemType& aValue) {
-      if (!current) {
-        aValue = 0;
-        return false;
+    void destroy(NodeType *&leaf){
+      if (leaf != nullptr){
+        destroy(leaf->left);
+        destroy(leaf->right);
+        delete leaf;
       }
+    }
+    
+    //Get the difference between Node right and left branch heights, if it returns positive
+    //We know the left side is greater, if negative, we know the right side is greater
+    int getDiff(NodeType *leaf){
+      int lHeight = 0;
+      int rHeight = 0;
+      if (leaf->left != nullptr) {
+        lHeight =  leaf->left->height;
+      }
+      if (leaf->right != nullptr) {
+        rHeight = leaf->right->height;
+      }
+      return lHeight - rHeight;
+    }
+    
+  };
+  
+}
 
-      Node* theCurr = current->right;  // start looking to the right
-        
-      while (true) { // this while forces a traversal as far left as possible
-        if (theCurr){  // if we have a pcurr, push it and go left, and repeat.
-          stack[stackIndex++] = theCurr;
-          theCurr = theCurr->left;
-        }
-        else { // backtrack
-          if (stackIndex > 0) {
-
-            Node* pCandidate = stack[--stackIndex];
-            
-            // did we backtrack up a right branch?
-            if (current == pCandidate->right) {
-              // if there is a parent, return the parent.
-              if (stackIndex > 0) {
-                current = stack[--stackIndex];
-                aKey = current->key;
-                aValue = current->value;
-                return true;
-              }
-              else  { // if up a right branch, and no parent, traversal finished
-                current = 0;
-                aValue = 0;
-                return false;
-              }
-            }
-            else { // up a left branch, done.
-              current = pCandidate;
-              aKey = current->key;
-              aValue = current->value;
-              return true;
-            }
-          }
-          else{  // totally done
-            current = 0;
-            aValue = 0;
-            return false;
-          }
-        }
-      }
-    }
-    
-    bool find(KeyType aKey, ItemType& aValue) {
-      Node* pCurr = tree->root;
-      stackIndex = 0;
-      
-      while (true) {
-        Node* pPushMe = pCurr;
-        if (pCurr->m_Key == aKey) { // already done?
-          current = pCurr;
-          aValue = current->value;
-          return true;
-        }
-        
-        if (pCurr->key > aKey)
-          pCurr = pCurr->left;
-        else
-          pCurr = pCurr->right;
-        
-        if (pCurr) { // maintain the stack so that GetNext will work.
-          stack[stackIndex++] = pPushMe;
-        }
-        else { // couldn't find it.
-          current = 0;
-          stackIndex = 0;
-          return false;
-        }
-      }
-      
-      return true;
-    }
-    
-  protected:
-    AVLTree*    tree;
-    Node*       stack[kMaxDepth];
-    short       stackIndex;
-    Node*       current;        // for iteration
-  }; //iterator
-  
-  friend class AVLIterator;
-  
-protected:
-  
-  void _Insert(KeyType key, ItemType item, Node *&root) {
-    if (key < root->key) {
-      if (root->left)
-        _Insert(key, item, root->left);
-      else
-        root->left = new Node(key, item);
-    }
-    else if (key > root->key) {
-      if (root->right)
-        _Insert(key, item, root->right);
-      else
-        root->right = new Node(key, item);
-    }
-    else {
-      // error - can't have duplicate keys.
-      // if duplicate keys are okay, change key < to key <= above
-    }
-    
-    computeBalance(root);
-    balance(root);
-  }
-  
-  void _Remove(Node*& root, KeyType key, bool& delOK) {
-    if (!root) {
-      delOK = false;
-    }
-    else if (root->m_Key > key) {  // go to left subtree
-      _Remove(root->left, key, delOK);
-      if (delOK) {
-        computeBalance(root);
-        balanceRight(root);
-      }
-    }
-    else if (root->key < key) { // go to right subtree
-      _Remove(root->right, key, delOK);
-      if (delOK) {
-        computeBalance(root);
-        balanceLeft(root);
-      }
-    }
-    else {  // node found!
-      Node* pMe = root;
-      if (!root->right) {
-        root = root->left;
-        delOK = true;
-        delete pMe;
-      }
-      else if (!root->left){
-        root = root->right;
-        delOK = true;
-        delete pMe;
-      }
-      else {
-        _RemoveBothChildren(root, root->left, delOK);
-        if (delOK) {
-          computeBalance(root);
-          balance(root);
-        }
-        delOK = true;
-      }
-    }
-  }
-  
-  void _RemoveBothChildren(Node* &root, Node*& curr, bool& delOK) {
-    if (!curr->right){
-      root->key = curr->key;
-      root->value = curr->value;
-      Node* pMe = curr;
-      curr = curr->left;
-      delete pMe;
-      delOK = true;
-    }
-    else {
-      _RemoveBothChildren(root, curr->right, delOK);
-      if (delOK) {
-        computeBalance(root);
-        balance(root);
-      }
-    }
-  }
-  
-  bool _Find(KeyType key, ItemType& item, Node* root) {
-    if (root) {
-      if (root->key == key) {
-        item = root->value;
-        return true;
-      }
-      return (key < root->key)
-        ? _Find(key, item, root->left)
-        : _Find(key, item, root->right);
-    }
-    return false;
-  }
-
-  void computeBalance(Node*  root) {
-    if (root) {
-      short leftDepth  = root->left  ? root->left->depth  : 0;
-      short rightDepth = root->right ? root->right->depth : 0;
-      
-      root->depth = 1 + ((leftDepth > rightDepth) ? leftDepth : rightDepth);
-      root->balance = rightDepth - leftDepth;
-    }
-  }
-  
-  void balance(Node*& root) {
-    if (root->balance > 1)
-      balanceRight(root);
-    
-    if (root->balance < -1)
-      balanceLeft(root);
-  }
-  
-  void balanceRight(Node*& root) {
-    if (root->right) {
-      if (root->right->balance > 0) {
-        rotateLeft(root);
-      }
-      else if (root->right->balance < 0) {
-        rotateRight(root->right);
-        rotateLeft(root);
-      }
-    }
-  }
-  
-  void balanceLeft(Node*& root) {
-    if (root->left) {
-      if (root->left->balance < 0) {
-        rotateRight(root);
-      }
-      else if (root->left->balance > 0) {
-        rotateLeft(root->left);
-        rotateRight(root);
-      }
-    }
-  }
-  
-  void rotateLeft(Node*& root) {
-    Node* pTemp = root;
-    root = root->right;
-    pTemp->right = root->left;
-    root->left = pTemp;
-    
-    computeBalance(root->left);
-    computeBalance(root->right);
-    computeBalance(root);
-  }
-
-  void rotateRight(Node*& root) {
-    Node* pTemp = root;
-    root = root->left;
-    pTemp->left = root->right;
-    root->right = pTemp;
-    
-    computeBalance(root->left);
-    computeBalance(root->right);
-    computeBalance(root);
-  }
-  
-};
-
-
-#endif /* AVLTree_h */
+#endif /* AVLTree2_h */

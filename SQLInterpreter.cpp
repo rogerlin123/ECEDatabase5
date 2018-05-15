@@ -109,6 +109,24 @@ namespace SF {
     return StatusResult{false};
   }
 
+  //hidden method to run "delete from {table} where..." sql command...
+  StatusResult runDeleteRows(Tokenizer &aTokenizer, Database &aDatabase) {
+    if(aTokenizer.size()>3) {
+      Parser theParser(aTokenizer);
+      DeleteRowsStatement theStatement{};
+      
+      StatusResult theResult=theStatement.parse(theParser);
+      if(theResult) {
+        Schema* theSchema=aDatabase.getSchema(theStatement.getTableName());
+        if(theSchema) {
+          RowCollection theCollection;
+          return aDatabase.deleteRows(theCollection, *theSchema, theStatement.getFilters());
+        }
+      }
+    }
+    return StatusResult{false};
+  }
+  
   StatusResult SQLInterpreter::runSQL(Tokenizer &aTokenizer) {
     
     Token theToken = aTokenizer.tokenAt(0);
@@ -128,14 +146,15 @@ namespace SF {
         return runInsert(aTokenizer, database);
         break;
         
-      case Keywords::update_kw:  //update record(s)...
-        break;
-        
-      case Keywords::delete_kw:  //delete records(s)...
-        break;
-        
       case Keywords::select_kw:  //select records(s)...
         return runSelectRows(aTokenizer, database);
+        break;
+
+      case Keywords::delete_kw:  //delete records(s)...
+        return runDeleteRows(aTokenizer, database);
+        break;
+
+      case Keywords::update_kw:  //update record(s)...
         break;
 
       case Keywords::describe_kw:

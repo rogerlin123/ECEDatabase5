@@ -129,11 +129,11 @@ namespace SF {
     return write(aBlock, stream);
   }
 
-    //mark associated block as FREE...
+    //mark associated block as FREE, optionally track it?...
   StatusResult Storage::releaseBlock(int aBlockNumber) {
-    //------------------------------------------------
-    // YOUR CODE HERE... (mark block free, track it?)
-    //------------------------------------------------
+    //--------------------------------------------------
+    // YOUR CODE HERE... 
+    //--------------------------------------------------
     return StatusResult{false,gNotImplemented};
   }
   

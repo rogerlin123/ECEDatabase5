@@ -212,10 +212,8 @@ namespace SF {
         Keywords theKeyword = getKeywordId(temp);
         if(Keywords::unknown_kw!=theKeyword) {
           tokens.push_back(Token(TokenType::keyword, temp, theKeyword));
-        }
-        else if(getFunctionId(temp)) {
-          tokens.push_back(Token(TokenType::function,temp));
-        }
+        }        
+        //else if(getFunctionId(temp)) {tokens.push_back(Token(TokenType::function,temp));}
         else {
           tokens.push_back(Token(TokenType::identifier,theString));
         }

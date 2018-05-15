@@ -78,20 +78,20 @@ namespace SF {
   
   //already got 'where', so go get key/value pairs until reach keyword or EOF...
   StatusResult Filters::parse(Parser &aParser) {
-
+    
     Token theToken{};
     KeyValuePair thePair;
     StatusResult theResult{true};
-
+    
     while(theResult && aParser.peekToken(theToken)) {
       switch(theToken.type) {
         case TokenType::identifier:
-          {
-            Expression *theExpression=getExpression(aParser, theToken);
-            if(theExpression) {
-              expressions.push_back(theExpression);
-            }
+        {
+          Expression *theExpression=getExpression(aParser, theToken);
+          if(theExpression) {
+            expressions.push_back(theExpression);
           }
+        }
           break;
           
         case TokenType::keyword:
@@ -104,8 +104,7 @@ namespace SF {
           break;
       }
     }
-
-    return StatusResult{false, gIdentifierExpected};
+    return theResult;
   }
   
   bool Filters::matches(Row &aRow) {
